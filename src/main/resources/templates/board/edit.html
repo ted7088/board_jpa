@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout/layout}"
+>
+  <div layout:fragment="content">
+    <h2>게시글 수정</h2>
+    <form th:action="@{/board/edit/{id}(id=${board.id})}" method="post">
+      <div class="mb-3">
+        <label for="title" class="form-label">제목</label>
+        <input
+          type="text"
+          class="form-control"
+          id="title"
+          name="title"
+          th:value="${board.title}"
+          required
+        />
+      </div>
+      <div class="mb-3">
+        <label for="author" class="form-label">작성자</label>
+        <input
+          type="text"
+          class="form-control"
+          id="author"
+          name="author"
+          th:value="${board.author}"
+          required
+          readonly
+        />
+      </div>
+      <div class="mb-3">
+        <label for="content" class="form-label">내용</label>
+        <textarea
+          class="form-control"
+          id="content"
+          name="content"
+          rows="10"
+          required
+          th:text="${board.content}"
+        ></textarea>
+      </div>
+      <div class="d-flex justify-content-between">
+        <a th:href="@{/board/{id}(id=${board.id})}" class="btn btn-secondary"
+          >취소</a
+        >
+        <button type="submit" class="btn btn-primary">수정</button>
+      </div>
+    </form>
+  </div>
+</html>
