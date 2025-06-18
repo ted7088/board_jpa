@@ -32,6 +32,7 @@ public class BoardService {
     }
 
     // 게시글 조회
+    @Transactional
     public BoardResponseDto getBoard(Long id) {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("게시글을 찾을 수 없습니다. id: " + id));
