@@ -38,7 +38,7 @@ public class BoardController {
         return ResponseEntity.ok(boards);
     }
 
-    // 게시글 수정
+    // 게시글 수정 2025.0.624
     @PutMapping("/{id}")
     public ResponseEntity<BoardResponseDto> updateBoard(
             @PathVariable Long id,
