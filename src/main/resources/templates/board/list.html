@@ -2,73 +2,403 @@
 <html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
   layout:decorate="~{layout/layout}">
 <div layout:fragment="content">
-  <div class="d-flex justify-content-between mb-3">
-    <h2>게시글 목록</h2>
-    <a href="/board/write" class="btn btn-primary">글쓰기</a>
+
+  <!-- 헤더 섹션 -->
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="page-title mb-2">
+          <i class="bi bi-grid-3x3-gap-fill me-2"></i>게시글 목록
+        </h2>
+        <p class="page-subtitle mb-0">
+          총 <span class="highlight" th:text="${totalItems}">0</span>개의 게시글
+        </p>
+      </div>
+      <a href="/board/write" class="btn btn-primary btn-create">
+        <i class="bi bi-plus-circle me-2"></i>새 글 작성
+      </a>
+    </div>
   </div>
 
   <!-- 검색 폼 -->
-  <form class="row g-3 mb-3" method="get" th:action="@{/}">
-    <div class="col-auto">
-      <input type="text" class="form-control" id="searchTitle" name="searchTitle" th:value="${searchTitle}"
-        placeholder="제목 검색" />
-    </div>
-    <div class="col-auto">
-      <button type="submit" class="btn btn-secondary">검색</button>
-    </div>
-  </form>
+  <div class="search-card mb-4">
+    <form class="search-form" method="get" th:action="@{/}">
+      <div class="input-group">
+        <span class="input-group-text">
+          <i class="bi bi-search"></i>
+        </span>
+        <input type="text" class="form-control" id="searchTitle" name="searchTitle" th:value="${searchTitle}"
+          placeholder="제목으로 검색하세요..." />
+        <button type="submit" class="btn btn-secondary">검색</button>
+      </div>
+    </form>
+  </div>
 
-  <table class="table">
-    <thead>
-      <tr>
-        <th>번호</th>
-        <th>제목</th>
-        <th>작성자</th>
-        <th>조회수</th>
-        <th>작성일</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr th:each="board : ${boards}">
-        <td th:text="${board.id}">1</td>
-        <td>
+  <!-- 게시글 카드 리스트 -->
+  <div class="board-cards">
+    <div class="board-card" th:each="board : ${boards}">
+      <div class="board-card-header">
+        <div class="board-meta">
+          <span class="board-id">#<span th:text="${board.id}">1</span></span>
+          <span class="board-author">
+            <i class="bi bi-person-circle me-1"></i>
+            <span th:text="${board.author}">작성자</span>
+          </span>
+        </div>
+        <div class="board-stats">
+          <span class="stat-item">
+            <i class="bi bi-eye-fill"></i>
+            <span th:text="${board.viewCount}">0</span>
+          </span>
+          <button class="stat-item like-btn-mini" th:data-board-id="${board.id}" onclick="likePost(this)">
+            <i class="bi bi-heart-fill"></i>
+            <span class="like-count" th:text="${board.likeCount}">0</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="board-card-body">
+        <h5 class="board-title">
           <a th:href="@{/board/{id}(id=${board.id})}" th:text="${board.title}">제목</a>
-        </td>
-        <td th:text="${board.author}">작성자</td>
-        <td th:text="${board.viewCount}">0</td>
-        <td th:text="${#temporals.format(board.createdAt, 'yyyy-MM-dd HH:mm')}">
-          2024-01-01
-        </td>
-      </tr>
-    </tbody>
-  </table>
+        </h5>
+        <p class="board-date">
+          <i class="bi bi-clock me-1"></i>
+          <span th:text="${#temporals.format(board.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01</span>
+        </p>
+      </div>
+    </div>
+  </div>
 
   <!-- 페이징 -->
-  <nav th:if="${totalPages > 0}">
-    <ul class="pagination justify-content-center">
+  <nav th:if="${totalPages > 0}" class="mt-5">
+    <ul class="pagination-modern justify-content-center">
       <!-- 이전 페이지 -->
-      <li class="page-item" th:classappend="${!hasPrev} ? 'disabled'">
-        <a class="page-link" th:href="@{/(page=${prevGroupStartPage}, searchTitle=${searchTitle})}" tabindex="-1"
-          aria-disabled="true">이전</a>
+      <li class="page-item-modern" th:classappend="${!hasPrev} ? 'disabled'">
+        <a class="page-link-modern" th:href="@{/(page=${prevGroupStartPage}, searchTitle=${searchTitle})}" tabindex="-1"
+          aria-disabled="true">
+          <i class="bi bi-chevron-left"></i>
+        </a>
       </li>
 
       <!-- 페이지 번호 -->
-      <li class="page-item" th:each="pageNum : ${#numbers.sequence(startPage, endPage)}"
+      <li class="page-item-modern" th:each="pageNum : ${#numbers.sequence(startPage, endPage)}"
         th:classappend="${pageNum == currentPage} ? 'active'">
-        <a class="page-link" th:href="@{/(page=${pageNum}, searchTitle=${searchTitle})}" th:text="${pageNum + 1}">1</a>
+        <a class="page-link-modern" th:href="@{/(page=${pageNum}, searchTitle=${searchTitle})}"
+          th:text="${pageNum + 1}">1</a>
       </li>
 
       <!-- 다음 페이지 -->
-      <li class="page-item" th:classappend="${!hasNext} ? 'disabled'">
-        <a class="page-link" th:href="@{/(page=${nextGroupStartPage}, searchTitle=${searchTitle})}">다음</a>
+      <li class="page-item-modern" th:classappend="${!hasNext} ? 'disabled'">
+        <a class="page-link-modern" th:href="@{/(page=${nextGroupStartPage}, searchTitle=${searchTitle})}">
+          <i class="bi bi-chevron-right"></i>
+        </a>
       </li>
     </ul>
   </nav>
 
-  <!-- 총 게시글 수 표시 -->
-  <div class="text-center mt-3">
-    <p>총 <span th:text="${totalItems}">0</span>개의 게시글</p>
-  </div>
+  <!-- 좋아요 기능 JavaScript -->
+  <script>
+    function likePost(button) {
+      const boardId = button.getAttribute('data-board-id');
+      const likeCountSpan = button.querySelector('.like-count');
+
+      fetch(`/api/boards/${boardId}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+        .then(response => response.json())
+        .then(data => {
+          likeCountSpan.textContent = data.likeCount;
+          button.classList.add('liked');
+          setTimeout(() => {
+            button.classList.remove('liked');
+          }, 300);
+        })
+        .catch(error => {
+          console.error('좋아요 처리 중 오류:', error);
+        });
+    }
+  </script>
+
+  <!-- 스타일 -->
+  <style>
+    .page-header {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 2rem;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .page-title {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .page-subtitle {
+      color: #6c757d;
+      font-size: 1rem;
+    }
+
+    .highlight {
+      color: #667eea;
+      font-weight: 700;
+    }
+
+    .btn-create {
+      padding: 0.8rem 2rem;
+      font-size: 1.05rem;
+      border-radius: 15px;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .search-card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 1.5rem;
+      border-radius: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .search-form .input-group {
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .search-form .input-group-text {
+      background: white;
+      border: none;
+      color: #667eea;
+      font-size: 1.2rem;
+    }
+
+    .search-form .form-control {
+      border: none;
+      padding: 0.8rem 1rem;
+      font-size: 1rem;
+    }
+
+    .search-form .form-control:focus {
+      box-shadow: none;
+    }
+
+    .search-form .btn {
+      border-radius: 0;
+      padding: 0.8rem 2rem;
+    }
+
+    .board-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .board-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .board-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .board-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    }
+
+    .board-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .board-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .board-meta {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .board-id {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.3rem 0.8rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .board-author {
+      color: #6c757d;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+    }
+
+    .board-stats {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      color: #6c757d;
+      font-size: 0.9rem;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .stat-item i {
+      font-size: 1rem;
+    }
+
+    .like-btn-mini {
+      color: #dc3545;
+    }
+
+    .like-btn-mini:hover {
+      transform: scale(1.1);
+    }
+
+    .like-btn-mini.liked {
+      animation: heartBeat 0.3s ease;
+    }
+
+    @keyframes heartBeat {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.3);
+      }
+    }
+
+    .board-card-body {
+      padding-top: 1rem;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .board-title {
+      margin-bottom: 0.8rem;
+    }
+
+    .board-title a {
+      color: #2d3748;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.1rem;
+      transition: color 0.3s ease;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .board-title a:hover {
+      color: #667eea;
+    }
+
+    .board-date {
+      color: #9ca3af;
+      font-size: 0.85rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    /* 페이징 스타일 */
+    .pagination-modern {
+      display: flex;
+      gap: 0.5rem;
+      list-style: none;
+      padding: 0;
+    }
+
+    .page-item-modern {
+      list-style: none;
+    }
+
+    .page-link-modern {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 45px;
+      height: 45px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .page-link-modern:hover {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .page-item-modern.active .page-link-modern {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .page-item-modern.disabled .page-link-modern {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    @media (max-width: 768px) {
+      .board-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .page-header {
+        padding: 1.5rem;
+      }
+
+      .page-title {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
 </div>
 
 </html>

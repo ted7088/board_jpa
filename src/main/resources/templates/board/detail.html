@@ -1,50 +1,528 @@
 <!DOCTYPE html>
-<html
-  xmlns:th="http://www.thymeleaf.org"
-  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-  layout:decorate="~{layout/layout}"
->
-  <div layout:fragment="content">
-    <div class="card">
-      <div class="card-header">
-        <h3 th:text="${board.title}">제목</h3>
-        <div class="d-flex justify-content-between">
-          <span th:text="${board.author}">작성자</span>
-          <span
-            th:text="${#temporals.format(board.createdAt, 'yyyy-MM-dd HH:mm')}"
-            >작성일</span
-          >
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  xmlns:sec="http://www.thymeleaf.org/extras/spring-security" layout:decorate="~{layout/layout}">
+<div layout:fragment="content">
+
+  <!-- 게시글 카드 -->
+  <div class="detail-container">
+    <div class="detail-card">
+      <!-- 헤더 -->
+      <div class="detail-header">
+        <div class="header-content">
+          <div class="title-section">
+            <h1 class="detail-title" th:text="${board.title}">제목</h1>
+            <div class="meta-info">
+              <span class="meta-item">
+                <i class="bi bi-person-circle"></i>
+                <span th:text="${board.author}">작성자</span>
+              </span>
+              <span class="meta-divider">•</span>
+              <span class="meta-item">
+                <i class="bi bi-clock"></i>
+                <span th:text="${#temporals.format(board.createdAt, 'yyyy-MM-dd HH:mm')}">작성일</span>
+              </span>
+              <span class="meta-divider">•</span>
+              <span class="meta-item">
+                <i class="bi bi-eye-fill"></i>
+                <span th:text="${board.viewCount}">0</span>
+              </span>
+            </div>
+          </div>
+          <button class="like-btn-large" th:data-board-id="${board.id}" onclick="likePost(this)">
+            <i class="bi bi-heart-fill"></i>
+            <span class="like-count" th:text="${board.likeCount}">0</span>
+          </button>
         </div>
       </div>
-      <div class="card-body">
-        <p
-          class="card-text"
-          style="min-height: 200px"
-          th:text="${board.content}"
-        >
-          내용
-        </p>
+
+      <!-- 본문 -->
+      <div class="detail-body">
+        <div class="content-text" th:text="${board.content}">내용</div>
       </div>
-      <div class="card-footer">
-        <div class="d-flex justify-content-between">
-          <div>
-            <a href="/" class="btn btn-secondary">목록으로</a>
-          </div>
-          <div>
-            <a
-              th:href="@{/board/edit/{id}(id=${board.id})}"
-              class="btn btn-primary"
-              >수정</a
-            >
-            <a
-              th:href="@{/board/delete/{id}(id=${board.id})}"
-              class="btn btn-danger"
-              onclick="return confirm('정말 삭제하시겠습니까?');"
-              >삭제</a
-            >
-          </div>
+
+      <!-- 푸터 -->
+      <div class="detail-footer">
+        <a href="/" class="btn btn-secondary">
+          <i class="bi bi-list-ul me-2"></i>목록으로
+        </a>
+        <div class="action-buttons">
+          <a th:href="@{/board/edit/{id}(id=${board.id})}" class="btn btn-primary">
+            <i class="bi bi-pencil-square me-2"></i>수정
+          </a>
+          <a th:href="@{/board/delete/{id}(id=${board.id})}" class="btn btn-danger"
+            onclick="return confirm('정말 삭제하시겠습니까?');">
+            <i class="bi bi-trash me-2"></i>삭제
+          </a>
         </div>
       </div>
     </div>
+
+    <!-- 댓글 섹션 -->
+    <div class="comments-section">
+      <div class="comments-header">
+        <h4 class="comments-title">
+          <i class="bi bi-chat-dots-fill me-2"></i>댓글
+          <span id="comment-count" class="comment-badge">0</span>
+        </h4>
+      </div>
+
+      <!-- 댓글 작성 폼 (로그인한 사용자만) -->
+      <div sec:authorize="isAuthenticated()" class="comment-form-card">
+        <textarea id="comment-content" class="comment-input" rows="3" placeholder="댓글을 입력하세요..."></textarea>
+        <div class="comment-form-footer">
+          <button class="btn btn-primary" onclick="submitComment()">
+            <i class="bi bi-send-fill me-2"></i>댓글 작성
+          </button>
+        </div>
+      </div>
+
+      <!-- 댓글 목록 -->
+      <div id="comments-list" class="comments-list"></div>
+    </div>
   </div>
+
+  <!-- JavaScript -->
+  <script th:inline="javascript">
+    const boardId = /*[[${board.id}]]*/ 0;
+    const currentUsername = /*[[${#authentication.name}]]*/ '';
+
+    // 좋아요 기능
+    function likePost(button) {
+      const likeCountSpan = button.querySelector('.like-count');
+
+      fetch(`/api/boards/${boardId}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+        .then(response => response.json())
+        .then(data => {
+          likeCountSpan.textContent = data.likeCount;
+          button.classList.add('liked');
+          setTimeout(() => button.classList.remove('liked'), 300);
+        })
+        .catch(error => console.error('좋아요 처리 중 오류:', error));
+    }
+
+    // 댓글 목록 로드
+    function loadComments() {
+      fetch(`/api/boards/${boardId}/comments`)
+        .then(response => response.json())
+        .then(comments => {
+          const commentsList = document.getElementById('comments-list');
+          const commentCount = document.getElementById('comment-count');
+
+          commentCount.textContent = comments.length;
+
+          if (comments.length === 0) {
+            commentsList.innerHTML = '<div class="no-comments"><i class="bi bi-chat-square-text"></i><p>첫 댓글을 작성해보세요!</p></div>';
+            return;
+          }
+
+          commentsList.innerHTML = comments.map(comment => `
+            <div class="comment-item" data-comment-id="${comment.id}">
+              <div class="comment-avatar">
+                <i class="bi bi-person-circle"></i>
+              </div>
+              <div class="comment-content">
+                <div class="comment-header">
+                  <div class="comment-author">
+                    <span class="author-name">${comment.authorName}</span>
+                    <span class="author-username">@${comment.authorUsername}</span>
+                  </div>
+                  ${comment.authorUsername === currentUsername ?
+              `<button class="comment-delete-btn" onclick="deleteComment(${comment.id})">
+                      <i class="bi bi-trash"></i>
+                    </button>` : ''}
+                </div>
+                <p class="comment-text">${comment.content}</p>
+                <span class="comment-time">${formatDate(comment.createdAt)}</span>
+              </div>
+            </div>
+          `).join('');
+        })
+        .catch(error => console.error('댓글 로드 중 오류:', error));
+    }
+
+    // 댓글 작성
+    function submitComment() {
+      const content = document.getElementById('comment-content').value.trim();
+
+      if (!content) {
+        alert('댓글 내용을 입력해주세요.');
+        return;
+      }
+
+      fetch(`/api/boards/${boardId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content })
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('댓글 작성 실패');
+          return response.json();
+        })
+        .then(data => {
+          document.getElementById('comment-content').value = '';
+          loadComments();
+        })
+        .catch(error => {
+          console.error('댓글 작성 중 오류:', error);
+          alert('댓글 작성 중 오류가 발생했습니다.');
+        });
+    }
+
+    // 댓글 삭제
+    function deleteComment(commentId) {
+      if (!confirm('댓글을 삭제하시겠습니까?')) return;
+
+      fetch(`/api/comments/${commentId}`, {
+        method: 'DELETE'
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('댓글 삭제 실패');
+          loadComments();
+        })
+        .catch(error => {
+          console.error('댓글 삭제 중 오류:', error);
+          alert('댓글 삭제 중 오류가 발생했습니다.');
+        });
+    }
+
+    // 날짜 포맷팅
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diff = now - date;
+
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+
+      if (minutes < 1) return '방금 전';
+      if (minutes < 60) return `${minutes}분 전`;
+      if (hours < 24) return `${hours}시간 전`;
+      if (days < 7) return `${days}일 전`;
+
+      return date.toLocaleDateString('ko-KR');
+    }
+
+    // 페이지 로드 시 댓글 목록 로드
+    document.addEventListener('DOMContentLoaded', loadComments);
+  </script>
+
+  <!-- 스타일 -->
+  <style>
+    .detail-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .detail-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .detail-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 2.5rem;
+      color: white;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 2rem;
+    }
+
+    .title-section {
+      flex: 1;
+    }
+
+    .detail-title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      line-height: 1.3;
+    }
+
+    .meta-info {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      opacity: 0.9;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.95rem;
+    }
+
+    .meta-divider {
+      opacity: 0.5;
+    }
+
+    .like-btn-large {
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 20px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .like-btn-large:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.05);
+    }
+
+    .like-btn-large.liked {
+      animation: heartBeatLarge 0.4s ease;
+    }
+
+    @keyframes heartBeatLarge {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.2);
+      }
+    }
+
+    .detail-body {
+      padding: 2.5rem;
+    }
+
+    .content-text {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: #2d3748;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .detail-footer {
+      padding: 1.5rem 2.5rem;
+      background: rgba(0, 0, 0, 0.02);
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 0.8rem;
+    }
+
+    /* 댓글 섹션 */
+    .comments-section {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+    }
+
+    .comments-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .comments-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #2d3748;
+      display: flex;
+      align-items: center;
+      margin: 0;
+    }
+
+    .comment-badge {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.3rem 0.8rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      margin-left: 0.8rem;
+    }
+
+    .comment-form-card {
+      background: rgba(102, 126, 234, 0.05);
+      border: 2px solid rgba(102, 126, 234, 0.1);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .comment-input {
+      width: 100%;
+      border: none;
+      background: white;
+      border-radius: 12px;
+      padding: 1rem;
+      font-size: 1rem;
+      resize: vertical;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .comment-input:focus {
+      outline: 2px solid #667eea;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    }
+
+    .comment-form-footer {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .comments-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .comment-item {
+      display: flex;
+      gap: 1rem;
+      padding: 1.5rem;
+      background: white;
+      border-radius: 16px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    .comment-item:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transform: translateX(4px);
+    }
+
+    .comment-avatar {
+      font-size: 2.5rem;
+      color: #667eea;
+      flex-shrink: 0;
+    }
+
+    .comment-content {
+      flex: 1;
+    }
+
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .comment-author {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .author-name {
+      font-weight: 600;
+      color: #2d3748;
+    }
+
+    .author-username {
+      color: #9ca3af;
+      font-size: 0.9rem;
+    }
+
+    .comment-delete-btn {
+      background: none;
+      border: none;
+      color: #dc3545;
+      cursor: pointer;
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .comment-delete-btn:hover {
+      background: rgba(220, 53, 69, 0.1);
+    }
+
+    .comment-text {
+      color: #4a5568;
+      line-height: 1.6;
+      margin: 0.5rem 0;
+    }
+
+    .comment-time {
+      color: #9ca3af;
+      font-size: 0.85rem;
+    }
+
+    .no-comments {
+      text-align: center;
+      padding: 3rem;
+      color: #9ca3af;
+    }
+
+    .no-comments i {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .no-comments p {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    @media (max-width: 768px) {
+      .detail-header {
+        padding: 1.5rem;
+      }
+
+      .header-content {
+        flex-direction: column;
+      }
+
+      .detail-title {
+        font-size: 1.5rem;
+      }
+
+      .detail-body {
+        padding: 1.5rem;
+      }
+
+      .detail-footer {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+      }
+
+      .action-buttons {
+        justify-content: center;
+      }
+
+      .comment-item {
+        padding: 1rem;
+      }
+
+      .comment-avatar {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</div>
+
 </html>

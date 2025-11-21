@@ -11,12 +11,17 @@ import org.springframework.data.repository.query.Param;
 public interface BoardRepository extends JpaRepository<Board, Long> {
     // 제목으로 게시글 검색
     Page<Board> findByTitleContaining(String title, Pageable pageable);
-    
+
     // 작성자로 게시글 검색
     Page<Board> findByAuthor(String author, Pageable pageable);
-    
+
     // 조회수 증가
     @Modifying
     @Query("UPDATE Board b SET b.viewCount = b.viewCount + 1 WHERE b.id = :id")
     void increaseViewCount(@Param("id") Long id);
+
+    // 좋아요 수 증가
+    @Modifying
+    @Query("UPDATE Board b SET b.likeCount = b.likeCount + 1 WHERE b.id = :id")
+    void increaseLikeCount(@Param("id") Long id);
 }

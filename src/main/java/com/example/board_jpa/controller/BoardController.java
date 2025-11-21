@@ -64,4 +64,11 @@ public class BoardController {
         Page<BoardResponseDto> boards = boardService.searchBoardsByTitle(title, pageable);
         return ResponseEntity.ok(boards);
     }
+
+    // 게시글 좋아요
+    @PostMapping("/{id}/like")
+    public ResponseEntity<BoardResponseDto> likeBoard(@PathVariable Long id) {
+        BoardResponseDto responseDto = boardService.likeBoard(id);
+        return ResponseEntity.ok(responseDto);
+    }
 }

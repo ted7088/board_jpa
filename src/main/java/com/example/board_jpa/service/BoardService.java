@@ -11,9 +11,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -28,7 +25,7 @@ public class BoardService {
         board.setTitle(requestDto.getTitle());
         board.setContent(requestDto.getContent());
         board.setAuthor(requestDto.getAuthor());
-        
+
         Board savedBoard = boardRepository.save(board);
         return BoardResponseDto.from(savedBoard);
     }
@@ -38,7 +35,7 @@ public class BoardService {
     public BoardResponseDto getBoard(Long id) {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("게시글을 찾을 수 없습니다. id: " + id));
-        
+
         boardRepository.increaseViewCount(id);
         return BoardResponseDto.from(board);
     }
@@ -54,10 +51,10 @@ public class BoardService {
     public BoardResponseDto updateBoard(Long id, BoardRequestDto requestDto) {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("게시글을 찾을 수 없습니다. id: " + id));
-        
+
         board.setTitle(requestDto.getTitle());
         board.setContent(requestDto.getContent());
-        
+
         return BoardResponseDto.from(board);
     }
 
@@ -74,5 +71,15 @@ public class BoardService {
     public Page<BoardResponseDto> searchBoardsByTitle(String title, Pageable pageable) {
         return boardRepository.findByTitleContaining(title, pageable)
                 .map(BoardResponseDto::from);
+    }
+
+    // 게시글 좋아요
+    @Transactional
+    public BoardResponseDto likeBoard(Long id) {
+        Board board = boardRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("게시글을 찾을 수 없습니다. id: " + id));
+
+        boardRepository.increaseLikeCount(id);
+        return BoardResponseDto.from(board);
     }
 }
