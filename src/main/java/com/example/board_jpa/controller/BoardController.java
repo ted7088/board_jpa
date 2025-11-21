@@ -5,10 +5,11 @@ import com.example.board_jpa.dto.BoardResponseDto;
 import com.example.board_jpa.service.BoardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/boards")
@@ -33,12 +34,13 @@ public class BoardController {
 
     // 게시글 목록 조회
     @GetMapping
-    public ResponseEntity<List<BoardResponseDto>> getAllBoards() {
-        List<BoardResponseDto> boards = boardService.getAllBoards();
+    public ResponseEntity<Page<BoardResponseDto>> getAllBoards(
+            @PageableDefault(size = 10, sort = "id", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
+        Page<BoardResponseDto> boards = boardService.getBoards(pageable);
         return ResponseEntity.ok(boards);
     }
 
-    // 게시글 수정 2025.0.624
+    // 게시글 수정
     @PutMapping("/{id}")
     public ResponseEntity<BoardResponseDto> updateBoard(
             @PathVariable Long id,
@@ -56,8 +58,10 @@ public class BoardController {
 
     // 제목으로 게시글 검색
     @GetMapping("/search")
-    public ResponseEntity<List<BoardResponseDto>> searchBoards(@RequestParam String title) {
-        List<BoardResponseDto> boards = boardService.searchBoardsByTitle(title);
+    public ResponseEntity<Page<BoardResponseDto>> searchBoards(
+            @RequestParam String title,
+            @PageableDefault(size = 10, sort = "id", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
+        Page<BoardResponseDto> boards = boardService.searchBoardsByTitle(title, pageable);
         return ResponseEntity.ok(boards);
     }
-} 
+}

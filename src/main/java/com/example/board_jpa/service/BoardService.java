@@ -6,6 +6,8 @@ import com.example.board_jpa.dto.BoardResponseDto;
 import com.example.board_jpa.repository.BoardRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,10 +44,9 @@ public class BoardService {
     }
 
     // 게시글 목록 조회
-    public List<BoardResponseDto> getAllBoards() {
-        return boardRepository.findAll().stream()
-                .map(BoardResponseDto::from)
-                .collect(Collectors.toList());
+    public Page<BoardResponseDto> getBoards(Pageable pageable) {
+        return boardRepository.findAll(pageable)
+                .map(BoardResponseDto::from);
     }
 
     // 게시글 수정
@@ -70,9 +71,8 @@ public class BoardService {
     }
 
     // 제목으로 게시글 검색
-    public List<BoardResponseDto> searchBoardsByTitle(String title) {
-        return boardRepository.findByTitleContaining(title).stream()
-                .map(BoardResponseDto::from)
-                .collect(Collectors.toList());
+    public Page<BoardResponseDto> searchBoardsByTitle(String title, Pageable pageable) {
+        return boardRepository.findByTitleContaining(title, pageable)
+                .map(BoardResponseDto::from);
     }
-} 
+}

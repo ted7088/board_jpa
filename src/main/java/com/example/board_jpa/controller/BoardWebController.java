@@ -4,6 +4,10 @@ import com.example.board_jpa.dto.BoardRequestDto;
 import com.example.board_jpa.dto.BoardResponseDto;
 import com.example.board_jpa.service.BoardService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -16,8 +20,52 @@ public class BoardWebController {
 
     // 게시글 목록 페이지
     @GetMapping("/")
-    public String list(Model model) {
-        model.addAttribute("boards", boardService.getAllBoards());
+    public String list(Model model,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "searchTitle", required = false) String searchTitle) {
+
+        Pageable pageable = PageRequest.of(page, 10, Sort.by("id").descending());
+        Page<BoardResponseDto> boardList;
+
+        if (searchTitle != null && !searchTitle.isEmpty()) {
+            boardList = boardService.searchBoardsByTitle(searchTitle, pageable);
+        } else {
+            boardList = boardService.getBoards(pageable);
+        }
+
+        int totalPages = boardList.getTotalPages();
+        int startPage = 0;
+        int endPage = 0;
+        int prevGroupStartPage = 0;
+        int nextGroupStartPage = 0;
+        boolean hasPrevGroup = false;
+        boolean hasNextGroup = false;
+
+        if (totalPages > 0) {
+            // Fixed block calculation (0-9, 10-19, 20-29, etc.)
+            int currentBlock = page / 10;
+            startPage = currentBlock * 10;
+            endPage = Math.min(totalPages - 1, startPage + 9);
+
+            // Calculate jump targets for Prev/Next buttons
+            hasPrevGroup = startPage > 0;
+            hasNextGroup = endPage < totalPages - 1;
+            prevGroupStartPage = Math.max(0, startPage - 10);
+            nextGroupStartPage = startPage + 10;
+        }
+
+        model.addAttribute("boards", boardList);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("startPage", startPage);
+        model.addAttribute("endPage", endPage);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalItems", boardList.getTotalElements());
+        model.addAttribute("hasNext", hasNextGroup);
+        model.addAttribute("hasPrev", hasPrevGroup);
+        model.addAttribute("prevGroupStartPage", prevGroupStartPage);
+        model.addAttribute("nextGroupStartPage", nextGroupStartPage);
+        model.addAttribute("searchTitle", searchTitle);
+
         return "board/list";
     }
 
@@ -64,4 +112,4 @@ public class BoardWebController {
         boardService.deleteBoard(id);
         return "redirect:/";
     }
-} 
+}
