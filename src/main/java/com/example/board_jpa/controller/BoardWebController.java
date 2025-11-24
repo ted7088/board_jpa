@@ -76,7 +76,7 @@ public class BoardWebController {
         return "board/write";
     }
 
-    // 게시글 작성 처리
+    // 게시글 작성 처리 페이지
     @PostMapping("/board/write")
     public String write(@ModelAttribute BoardRequestDto boardRequestDto) {
         boardService.createBoard(boardRequestDto);
