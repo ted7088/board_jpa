@@ -32,11 +32,12 @@ public class BoardController {
         return ResponseEntity.ok(responseDto);
     }
 
-    // 게시글 목록 조회
+    // 게시글 목록 조회 (정렬 기능 추가)
     @GetMapping
     public ResponseEntity<Page<BoardResponseDto>> getAllBoards(
-            @PageableDefault(size = 10, sort = "id", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
-        Page<BoardResponseDto> boards = boardService.getBoards(pageable);
+            @RequestParam(defaultValue = "latest") String sortBy,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<BoardResponseDto> boards = boardService.getBoards(sortBy, pageable);
         return ResponseEntity.ok(boards);
     }
 
@@ -56,12 +57,13 @@ public class BoardController {
         return ResponseEntity.ok().build();
     }
 
-    // 제목으로 게시글 검색
+    // 제목으로 게시글 검색 (정렬 기능 추가)
     @GetMapping("/search")
     public ResponseEntity<Page<BoardResponseDto>> searchBoards(
             @RequestParam String title,
-            @PageableDefault(size = 10, sort = "id", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
-        Page<BoardResponseDto> boards = boardService.searchBoardsByTitle(title, pageable);
+            @RequestParam(defaultValue = "latest") String sortBy,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<BoardResponseDto> boards = boardService.searchBoardsByTitle(title, sortBy, pageable);
         return ResponseEntity.ok(boards);
     }
 

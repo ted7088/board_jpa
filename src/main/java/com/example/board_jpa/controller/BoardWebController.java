@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -22,15 +21,16 @@ public class BoardWebController {
     @GetMapping("/")
     public String list(Model model,
             @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "sortBy", defaultValue = "latest") String sortBy,
             @RequestParam(value = "searchTitle", required = false) String searchTitle) {
 
-        Pageable pageable = PageRequest.of(page, 10, Sort.by("id").descending());
+        Pageable pageable = PageRequest.of(page, 10);
         Page<BoardResponseDto> boardList;
 
         if (searchTitle != null && !searchTitle.isEmpty()) {
-            boardList = boardService.searchBoardsByTitle(searchTitle, pageable);
+            boardList = boardService.searchBoardsByTitle(searchTitle, sortBy, pageable);
         } else {
-            boardList = boardService.getBoards(pageable);
+            boardList = boardService.getBoards(sortBy, pageable);
         }
 
         int totalPages = boardList.getTotalPages();
@@ -65,6 +65,7 @@ public class BoardWebController {
         model.addAttribute("prevGroupStartPage", prevGroupStartPage);
         model.addAttribute("nextGroupStartPage", nextGroupStartPage);
         model.addAttribute("searchTitle", searchTitle);
+        model.addAttribute("sortBy", sortBy);
 
         return "board/list";
     }

@@ -7,7 +7,9 @@ import com.example.board_jpa.repository.BoardRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,10 +42,25 @@ public class BoardService {
         return BoardResponseDto.from(board);
     }
 
-    // 게시글 목록 조회
-    public Page<BoardResponseDto> getBoards(Pageable pageable) {
-        return boardRepository.findAll(pageable)
-                .map(BoardResponseDto::from);
+    // 게시글 목록 조회 (정렬 기능 추가)
+    public Page<BoardResponseDto> getBoards(String sortBy, Pageable pageable) {
+        Sort sort;
+
+        switch (sortBy.toLowerCase()) {
+            case "likes":
+                sort = Sort.by(Sort.Order.desc("likeCount"), Sort.Order.desc("createdAt"));
+                break;
+            case "views":
+                sort = Sort.by(Sort.Order.desc("viewCount"), Sort.Order.desc("createdAt"));
+                break;
+            case "latest":
+            default:
+                sort = Sort.by(Sort.Order.desc("createdAt"));
+                break;
+        }
+
+        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+        return boardRepository.findAll(sortedPageable).map(BoardResponseDto::from);
     }
 
     // 게시글 수정
@@ -67,10 +84,25 @@ public class BoardService {
         boardRepository.deleteById(id);
     }
 
-    // 제목으로 게시글 검색
-    public Page<BoardResponseDto> searchBoardsByTitle(String title, Pageable pageable) {
-        return boardRepository.findByTitleContaining(title, pageable)
-                .map(BoardResponseDto::from);
+    // 제목으로 게시글 검색 (정렬 기능 추가)
+    public Page<BoardResponseDto> searchBoardsByTitle(String title, String sortBy, Pageable pageable) {
+        Sort sort;
+
+        switch (sortBy.toLowerCase()) {
+            case "likes":
+                sort = Sort.by(Sort.Order.desc("likeCount"), Sort.Order.desc("createdAt"));
+                break;
+            case "views":
+                sort = Sort.by(Sort.Order.desc("viewCount"), Sort.Order.desc("createdAt"));
+                break;
+            case "latest":
+            default:
+                sort = Sort.by(Sort.Order.desc("createdAt"));
+                break;
+        }
+
+        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+        return boardRepository.findByTitleContaining(title, sortedPageable).map(BoardResponseDto::from);
     }
 
     // 게시글 좋아요
@@ -82,4 +114,20 @@ public class BoardService {
         boardRepository.increaseLikeCount(id);
         return BoardResponseDto.from(board);
     }
+
 }
+
+    
+                        
+                        
+                        
+                        
+                
+                
+                
+
+
+
+
+
+    
